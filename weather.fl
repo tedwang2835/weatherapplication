@@ -1,0 +1,297 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0305
+header_name {.h}
+code_name {.cxx}
+decl {\#include<iostream>} {private global
+}
+
+decl {\#include<iomanip>} {private global
+}
+
+decl {\#include<sstream>} {private global
+}
+
+decl {\#include<cstring>} {private global
+}
+
+decl {\#include <cstdlib>} {private global
+}
+
+decl {using namespace std;} {private global
+}
+
+decl {\#include "curl.h"} {private global
+}
+
+decl {\#include "data_retrieve.h"} {private global
+}
+
+decl {\#include "audiere.h"} {private global
+}
+
+decl {using namespace audiere;} {private global
+}
+
+decl {AudioDevicePtr device;} {private global
+}
+
+Function {f2c(double f)} {open return_type double
+} {
+  code {const double K = 0.55;
+int c = (f - 32) * K;
+return c;} {}
+}
+
+Function {} {open
+} {
+  code {AudioDevicePtr device(OpenDevice());
+OutputStreamPtr sound(OpenSound(device,"wind.wav",false));
+ sound->play();} {}
+  Fl_Window Window {
+    label Weather open
+    xywh {280 220 400 350} type Double align 65 visible
+  } {
+    Fl_Input input2 {
+      label {Zip Code:}
+      xywh {125 20 150 22}
+    }
+    Fl_Button calculate {
+      label OK
+      callback {weather -> value("");
+temperature -> value("");
+humidity -> value("");
+hight -> value("");
+lowt -> value("");
+
+
+const string URL = "http://www.wunderground.com/cgi-bin/findweather/getForecast?query=";
+istringstream iss(input2->value());
+string zipcode=iss.str();
+if(zipcode.length() != 5)
+{
+ sm -> value("Error: zipcode");
+}
+else
+{
+string website = URL+iss.str();
+cout<<website;
+string page;
+ostringstream oss;
+CURL* curl = curl_easy_init(); // a "handle" or "pointer" into the library
+
+AudioDevicePtr device(OpenDevice());
+OutputStreamPtr sound(OpenSound(device,"bird.mp3",false));
+sound->play();
+if(curl) // check to make sure if the handle is valid
+{
+	curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,handle_data);
+	curl_easy_setopt(curl,CURLOPT_WRITEDATA,&page);
+	curl_easy_setopt(curl,CURLOPT_URL,website.c_str());
+	CURLcode result = curl_easy_perform(curl);
+	if(result==0)
+	{
+		cout<<"access successful"<<endl;
+	}
+	else
+	{
+		cout<<"Access failed. Please try again later."<<endl;
+		curl_easy_cleanup(curl);
+	}
+}
+else
+{
+cout<<"Error in curl handle"<<endl;
+exit(1); // failure to get exchange rate, so quit program
+}
+
+	// if user checks Farenheit, display temperature unit in Farenheit	
+if( farenheit -> value() )
+{
+// Finds the current temperature
+size_t pos_of_clear = page.find("Feels like");
+size_t tempnow_ld = page.find("<", pos_of_clear);
+size_t tempnow_rd = page.find(">", tempnow_ld);
+string tempnow = page.substr(tempnow_ld + 1 , tempnow_rd - tempnow_ld - 1);
+
+	if( tempnow.length() > 5) // quits the program if it doesn't find +Clear+ and does not continue.
+	{
+		cout<<"Error: Wrong zip code "<<endl;
+		cout<<"Please enter a valid zip code: ";
+		sm -> value("Error: zipcode");
+		iss.clear();
+		iss.str("");
+	}
+cout<<"The current temperature is "<<tempnow<<" F";
+oss << tempnow;
+temperature -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+
+//  This is to find High of the day
+size_t pos_of_later = page.find("Later%3A+");
+size_t high_ld = page.find("+(" , pos_of_later);
+size_t high_rd = page.find("+F" , high_ld);
+string high = page.substr(high_ld + 2 , high_rd - high_ld - 2);
+oss << high;
+cout<<"Today's High is "<<high<<" F"<<endl;
+hight -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+
+//  This is to find Low of the day
+size_t low_ld = page.find("%2F+" , pos_of_later);
+size_t low_rd = page.find("F)" , low_ld);
+string low = page.substr( low_ld + 4 , low_rd - low_ld - 5);
+oss << low;
+cout<<"Today's Low is "<<low<<" F"<<endl;
+lowt -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+		
+// This finds the current humidity level
+size_t pos_of_pwsrtb = page.find("pwsrt b");
+size_t h_ld = page.find("value=" , pos_of_pwsrtb);
+size_t h_rd = page.find("><" , h_ld);
+string humidity_now = page.substr( h_ld + 7 , h_rd - h_ld - 8 ) + " %";
+oss << humidity_now;
+cout<<"Today's Humidity Level is "<<humidity_now<<" %"<<endl;
+humidity -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+
+		
+// This finds the current weather
+size_t curw_ld = page.find("%3A+");
+size_t curw_rd = page.find("+(" , curw_ld);
+string curw = page.substr( curw_ld + 4  , curw_rd - curw_ld - 4 );
+oss << curw;
+cout<<"The current weather is "<<curw<<endl;
+weather -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+sm -> value("Access successful");
+}
+else if( celsius -> value() )
+{
+stringstream ss;
+
+//Display appropriate image
+
+ 
+// Finds the current temperature
+size_t pos_of_clear = page.find("Now%3A");
+size_t tempnow_ld = page.find("(", pos_of_clear);
+size_t tempnow_rd = page.find("+", tempnow_ld);
+string tempnow = page.substr(tempnow_ld + 1 , tempnow_rd - tempnow_ld - 1);
+
+	if( tempnow.length() > 5) // quits the program if it doesn't find +Clear+ and does not continue.
+	{
+		cout<<"Error: Wrong zip code "<<endl;
+		cout<<"Please enter a valid zip code: ";
+		iss.clear();
+		iss.str("");
+		sm -> value("Error: zipcode");
+	}
+double tnow = atof(tempnow.c_str());
+cout<<"Currently "<<f2c(tnow)<<" C";
+ss << f2c(tnow);
+temperature -> value(ss.str().c_str());
+ss.clear();
+ss.str("");
+
+//  This is to find High of the day
+size_t pos_of_later = page.find("Later%3A+");
+size_t high_ld = page.find("+(" , pos_of_later);
+size_t high_rd = page.find("+F" , high_ld);
+string high = page.substr(high_ld + 2 , high_rd - high_ld - 2);
+double thigh = atof(high.c_str());
+cout<<"Today's High is "<<f2c(thigh)<<" C"<<endl;
+ss << f2c(thigh);
+hight -> value(ss.str().c_str());
+ss.clear();
+ss.str("");
+
+//  This is to find Low of the day
+size_t low_ld = page.find("%2F+" , pos_of_later);
+size_t low_rd = page.find("F)" , low_ld);
+string low = page.substr( low_ld + 4 , low_rd - low_ld - 5);
+double tlow = atof(low.c_str());
+cout<<"Today's Low is "<<f2c(tlow)<<" C"<<endl;
+ss << f2c(tlow);
+lowt -> value(ss.str().c_str());
+ss.clear();
+ss.str("");
+		
+// This finds the current humidity level
+size_t pos_of_pwsrtb = page.find("pwsrt b");
+size_t h_ld = page.find("value=" , pos_of_pwsrtb);
+size_t h_rd = page.find("><" , h_ld);
+string humidity_now = page.substr( h_ld + 7 , h_rd - h_ld - 8 ) + " %";
+oss << humidity_now;
+cout<<"Today's Humidity Level is "<<humidity_now<<" %"<<endl;
+humidity -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+
+		
+// This finds the current weather
+size_t curw_ld = page.find("%3A+");
+size_t curw_rd = page.find("+(" , curw_ld);
+string curw = page.substr( curw_ld + 4  , curw_rd - curw_ld - 4 );
+oss << curw;
+cout<<"The current weather is "<<curw<<endl;
+weather -> value(oss.str().c_str());
+oss.clear();
+oss.str("");
+
+sm -> value("Access successful");
+}
+}} selected
+      xywh {280 22 45 20}
+    }
+    Fl_Box snow {
+      image {images/snow.JPG} xywh {185 136 30 16}
+    }
+    Fl_Box rain {
+      image {images/rain.JPG} xywh {185 136 30 16}
+    }
+    Fl_Box cloudy {
+      image {images/cloudy.JPG} xywh {185 136 30 16}
+    }
+    Fl_Box clear {
+      image {images/clear.JPG} xywh {185 136 30 16}
+    }
+    Fl_Output weather {
+      label {Weather:}
+      xywh {104 261 105 24}
+    }
+    Fl_Output temperature {
+      label {Temp:}
+      xywh {104 286 105 23}
+    }
+    Fl_Output humidity {
+      label {Humidity:}
+      xywh {104 310 105 23}
+    }
+    Fl_Round_Button farenheit {
+      label Fahrenheit
+      xywh {155 46 90 15} type Radio down_box ROUND_DOWN_BOX
+    }
+    Fl_Round_Button celsius {
+      label Celsius
+      xywh {155 59 90 15} type Radio down_box ROUND_DOWN_BOX
+    }
+    Fl_Output hight {
+      label {High: }
+      xywh {251 287 105 24}
+    }
+    Fl_Output lowt {
+      label {Low: }
+      xywh {251 261 105 24}
+    }
+    Fl_Output sm {
+      label {System Message}
+      xywh {160 226 150 28}
+    }
+  }
+}
